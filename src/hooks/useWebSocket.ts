@@ -11,11 +11,19 @@ interface UseWebSocketOptions {
   onError?: (error: Error) => void;
 }
 
+// Backend sends: { sessionId, reactionCounts: { CONFUSED: n, MORE: n } }
+// We need to handle both formats for flexibility
 interface ReactionMessage {
   sessionId: string;
-  confusedCount: number;
-  moreCount: number;
-  timestamp: number;
+  // New format from backend
+  reactionCounts?: {
+    CONFUSED?: number;
+    MORE?: number;
+  };
+  // Legacy format (keeping for compatibility)
+  confusedCount?: number;
+  moreCount?: number;
+  timestamp?: number;
 }
 
 export function useWebSocket({
@@ -54,7 +62,12 @@ export function useWebSocket({
           try {
             const data: ReactionMessage = JSON.parse(message.body);
             console.log('[WebSocket] Reaction update:', data);
-            setReactionsFromBackend(data.confusedCount, data.moreCount);
+
+            // Handle both backend format (reactionCounts map) and legacy format
+            const confused = data.reactionCounts?.CONFUSED ?? data.confusedCount ?? 0;
+            const more = data.reactionCounts?.MORE ?? data.moreCount ?? 0;
+
+            setReactionsFromBackend(confused, more);
           } catch (err) {
             console.error('[WebSocket] Failed to parse message:', err);
           }

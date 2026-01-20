@@ -17,9 +17,10 @@ interface Particle {
   id: number;
   x: number;
   y: number;
+  endX: number;  // Pre-calculated end position
+  endY: number;
   color: string;
-  angle: number;
-  velocity: number;
+  size: number;
 }
 
 export function AudiencePage() {
@@ -67,17 +68,22 @@ export function AudiencePage() {
   };
 
   const createParticles = (x: number, y: number, type: ReactionType) => {
-    const color = type === 'confused' ? '#F59E0B' : '#3B82F6';
+    const baseColor = type === 'confused' ? '#F59E0B' : '#3B82F6';
     const newParticles: Particle[] = [];
+    const particleCount = 8; // Lightweight but impressive
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const distance = 40 + Math.random() * 30; // Random distance 40-70px
+
       newParticles.push({
         id: particleIdRef.current++,
         x,
         y,
-        color,
-        angle: (Math.PI * 2 * i) / 12,
-        velocity: 3 + Math.random() * 2,
+        endX: x + Math.cos(angle) * distance,
+        endY: y + Math.sin(angle) * distance,
+        color: baseColor,
+        size: 6 + Math.random() * 4, // Random size 6-10px
       });
     }
 
@@ -181,21 +187,26 @@ export function AudiencePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Particle Effects */}
+      {/* Particle Effects - Using CSS custom properties for end position */}
       {particles.map((particle) => (
         <div
           key={particle.id}
-          className="fixed pointer-events-none z-50 animate-particle"
+          className="fixed pointer-events-none z-50 particle-burst"
           style={{
             left: particle.x,
             top: particle.y,
-            '--angle': `${particle.angle}rad`,
-            '--velocity': particle.velocity,
+            '--end-x': `${particle.endX - particle.x}px`,
+            '--end-y': `${particle.endY - particle.y}px`,
           } as React.CSSProperties}
         >
           <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: particle.color }}
+            className="rounded-full"
+            style={{
+              backgroundColor: particle.color,
+              width: particle.size,
+              height: particle.size,
+              boxShadow: `0 0 ${particle.size}px ${particle.color}`,
+            }}
           />
         </div>
       ))}
