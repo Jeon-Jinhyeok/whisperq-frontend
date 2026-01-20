@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { JoinPage } from '@/pages/JoinPage';
 import { AudiencePage } from '@/pages/AudiencePage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { AdminPage } from '@/pages/AdminPage';
+import { ReportPage } from '@/pages/ReportPage';
 import { AnalysisPage } from '@/pages/AnalysisPage';
 
 function App() {
@@ -15,8 +17,10 @@ function App() {
         {/* Audience Route */}
         <Route path="/s/:sessionCode" element={<AudiencePage />} />
 
-        {/* Facilitator Routes (TODO: Add auth protection) */}
+        {/* Presenter/Facilitator Routes */}
         <Route path="/dashboard/:sessionId" element={<DashboardPage />} />
+        <Route path="/admin/:sessionId" element={<AdminPage />} />
+        <Route path="/report/:sessionId" element={<ReportPage />} />
         <Route path="/analysis/:sessionId" element={<AnalysisPage />} />
 
         {/* 404 Fallback */}

@@ -2,12 +2,11 @@ import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useReactionStore } from '@/stores/reactionStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { GlowEffect } from '@/components/GlowEffect';
 import { Button } from '@/components/ui/button';
 
 export function DashboardPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { intensity, dominantType, recentReactions, glowActive, updateReactions } = useReactionStore();
+  const { dominantType, recentReactions, glowActive, updateReactions, resetReactions } = useReactionStore();
   const [demoMode, setDemoMode] = useState(false);
 
   // Connect to WebSocket for real-time updates
@@ -17,100 +16,100 @@ export function DashboardPage() {
     onError: (err) => console.error('Dashboard WebSocket error:', err),
   });
 
-  // Determine which message to show (glow triggers at 5+ points)
+  // Per spec: Orange glow rgba(255, 165, 0, 0.6), Blue glow rgba(0, 150, 255, 0.6)
+  const getGlowStyle = () => {
+    if (!glowActive || !dominantType) {
+      return {};
+    }
+
+    const color = dominantType === 'confused'
+      ? 'rgba(255, 165, 0, 0.6)'
+      : 'rgba(0, 150, 255, 0.6)';
+
+    return {
+      background: `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 70%)`,
+    };
+  };
+
+  // Per spec: Text messages
   const getMessage = () => {
     if (!dominantType || !glowActive) return null;
 
     if (dominantType === 'confused') {
-      return { emoji: '🤔', text: '조금 더 풀어서 설명해주세요' };
+      return '조금 더 풀어서 설명해주세요';
     } else {
-      return { emoji: '✨', text: '이 부분 더 깊이 다뤄주세요' };
+      return '이 부분 더 깊이 다뤄주세요';
     }
   };
 
   const message = getMessage();
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Glow Effect */}
-      <GlowEffect
-        intensity={intensity}
-        color={dominantType === 'confused' ? 'orange' : 'blue'}
+    // Per spec: Default background dark gray #2D2D2D
+    <div className="min-h-screen relative overflow-hidden transition-all duration-300" style={{ backgroundColor: '#2D2D2D' }}>
+      {/* Glow Effect - Full screen radial gradient with 300ms fade */}
+      <div
+        className="absolute inset-0 transition-all duration-300 pointer-events-none"
+        style={getGlowStyle()}
       />
 
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 p-4 z-10">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold">whisper-Q</h1>
-          <span className="text-sm text-muted-foreground">
-            세션: {sessionId}
-          </span>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="min-h-screen flex flex-col items-center justify-center">
+      {/* Main Content - Centered message (per spec: no other elements visible) */}
+      <main className="min-h-screen flex flex-col items-center justify-center relative z-10">
         {message ? (
-          <div className="text-center animate-pulse-glow">
-            <span className="text-8xl mb-4 block">{message.emoji}</span>
-            <p className="text-2xl font-medium text-foreground">
-              {message.text}
+          <div className="text-center animate-fade-in">
+            <p className="text-3xl font-medium text-white">
+              {message}
             </p>
           </div>
-        ) : (
-          <div className="text-center text-muted-foreground">
-            <p className="text-xl">청중의 반응을 기다리는 중...</p>
-            <p className="text-sm mt-2">
-              반응이 들어오면 화면에 표시됩니다
-            </p>
-          </div>
-        )}
+        ) : null}
       </main>
 
-      {/* Demo Controls (for testing glow effect) */}
+      {/* Demo Controls - Only visible in demo mode */}
       {demoMode && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => updateReactions('confused', recentReactions.confused + 5, Math.min(intensity + 15, 100))}
-            className="bg-amber-100 hover:bg-amber-200"
+            onClick={() => updateReactions('confused', recentReactions.confused + 5, 100)}
+            className="bg-amber-100 hover:bg-amber-200 text-gray-800"
           >
             🤔 +5
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => updateReactions('more', recentReactions.more + 5, Math.min(intensity + 15, 100))}
-            className="bg-blue-100 hover:bg-blue-200"
+            onClick={() => updateReactions('more', recentReactions.more + 5, 100)}
+            className="bg-blue-100 hover:bg-blue-200 text-gray-800"
           >
-            ✨ +5
+            👀 +5
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => updateReactions('confused', 0, 0)}
+            onClick={() => resetReactions()}
+            className="text-gray-800"
           >
             리셋
           </Button>
         </div>
       )}
 
-      {/* Footer with debug info */}
-      <footer className="absolute bottom-0 left-0 right-0 p-4 text-xs text-muted-foreground z-10">
+      {/* Footer with connection status and demo toggle */}
+      <footer className="absolute bottom-0 left-0 right-0 p-4 text-xs text-gray-400 z-10">
         <div className="flex justify-center items-center gap-4">
-          <span className={isConnected ? 'text-green-500' : 'text-red-500'}>
-            {isConnected ? '연결됨' : connectionError || '연결 중...'}
+          <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
+            {isConnected ? '● 연결됨' : connectionError || '○ 연결 중...'}
           </span>
-          <span>|</span>
+          <span className="text-gray-600">|</span>
           <span>🤔 {recentReactions.confused}점</span>
-          <span>✨ {recentReactions.more}점</span>
-          <span>| 글로우: {glowActive ? 'ON' : 'OFF'}</span>
+          <span>👀 {recentReactions.more}점</span>
+          <span className="text-gray-600">|</span>
+          <span>글로우: {glowActive ? 'ON' : 'OFF'}</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setDemoMode(!demoMode)}
-            className="text-xs"
+            className="text-xs text-gray-400 hover:text-white"
           >
             {demoMode ? '데모 숨기기' : '데모 모드'}
           </Button>

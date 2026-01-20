@@ -5,7 +5,7 @@ interface ReactionButtonProps {
   type: ReactionType;
   label: string;
   emoji: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 interface Ripple {
@@ -39,16 +39,12 @@ export function ReactionButton({
         setRipples((prev) => prev.filter((r) => r.id !== rippleId));
       }, 600);
 
-      // Trigger scale animation
+      // Trigger scale animation (per spec: 150ms to scale(1.1))
       setIsPressed(true);
-      setTimeout(() => setIsPressed(false), 200);
+      setTimeout(() => setIsPressed(false), 150);
 
-      // Haptic feedback (if supported)
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-
-      onClick();
+      // Pass event to parent for particle effects
+      onClick(e);
     },
     [onClick]
   );
@@ -96,7 +92,9 @@ export function ReactionButton({
       >
         {emoji}
       </span>
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium text-gray-700 text-center leading-tight px-2">
+        {label}
+      </span>
     </button>
   );
 }
