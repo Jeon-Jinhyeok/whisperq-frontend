@@ -33,7 +33,7 @@ export function useWebSocket({
   onError,
 }: UseWebSocketOptions) {
   const clientRef = useRef<Client | null>(null);
-  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const setReactionsFromBackend = useReactionStore(
